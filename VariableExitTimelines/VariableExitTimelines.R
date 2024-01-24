@@ -1,0 +1,45 @@
+# clean up and setup
+rm(list=ls()) # clean up any old stuff in R
+
+library(tidyverse)
+library(dplyr)
+library(lubridate)
+
+setwd("C:/Users/hyper/OneDrive/Documents/GitHub/Insurance-Corporate-Bonds")
+#setwd("/home/fnce/wangchj/projects/chj_projects/data/corpBond")
+
+df <- readRDS('insurers_transactions.rds')
+brokers <- read.csv('brokers.csv')
+
+#Basic filtering conducted on the read-in data 
+df <- df[df$trade_cost > 0, ]
+
+df <- df %>% group_by(parent_id) %>% arrange(report_date, .by_group = TRUE) %>% mutate(
+  diff = day(days(report_date - lag(report_date, default = report_date[1], order_by = report_date)))
+)
+
+#TODO: Not sure if this is correct because it assumes only one ob of interest 
+#TODO: May also want to change evaluate metrics to be lower-bounded (i.e >= 2 months but <= 6 months)
+df <- df %>% group_by(parent_id) %>% summarize(
+  maxDist = days(max(diff))
+) %>% as.data.frame()
+
+#calculate month difference
+month1 <- df[df$maxDist >= months(1), ]
+month2 <- month1[month1$maxDist >= months(2), ]
+quarter <- month2[month2$maxDist >= months(3), ]
+halfyear <- quarter[quarter$maxDist >= months(6), ]
+year1 <- halfyear[halfyear$maxDist >= years(1), ]
+year2 <- year1[year1$maxDist >= years(2), ]
+year5 <- year2[year2$maxDist >= years(5), ]
+decade <- year5[year5$maxDist >= years(10), ]
+
+#output
+print(paste("Number of companies with at least a 1 month gap: ", toString(dim(month1)[1])))
+print(paste("Number of companies with at least a 2 month gap: ", toString(dim(month2)[1])))
+print(paste("Number of companies with at least a 3 month gap: ", toString(dim(quarter)[1])))
+print(paste("Number of companies with at least a 6 month gap: ", toString(dim(halfyear)[1])))
+print(paste("Number of companies with at least a 1 year gap: ", toString(dim(year1)[1])))
+print(paste("Number of companies with at least a 2 year gap: ", toString(dim(year2)[1])))
+print(paste("Number of companies with at least a 5 year gap: ", toString(dim(year5)[1])))
+print(paste("Number of companies with at least a 10 year gap: ", toString(dim(decade)[1])))

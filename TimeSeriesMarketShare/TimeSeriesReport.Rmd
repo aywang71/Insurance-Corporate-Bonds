@@ -1,0 +1,160 @@
+---
+title: "Time Series Market Share"
+author: "Andrew Wang"
+date: "2023-12-26"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# clean up and setup
+rm(list=ls()) # clean up any old stuff in R
+
+library(tidyverse)
+library(dplyr)
+library(lubridate)
+library(gridExtra)
+
+df <- readRDS("C:/Users/hyper/OneDrive/Documents/GitHub/Insurance-Corporate-Bonds/insurers_transactions.rds")
+```
+
+## Market Share of E-Traders over Time
+
+We import the data from Dropbox and remove all negatives values of trade_cost
+
+```{r cars}
+#Basic filtering conducted on the read-in data 
+df <- df[df$trade_cost > 0, ]
+```
+NOTE: README Document notes that some trade_cost obs are in plain dollar amount rather than thousands, there has not yet been any action taken regarding this information. 
+
+In our plotting, we plot on four scales: daily, weekly, monthly, and yearly, across four measures of market share: OTC volume, e-trading volume, combined (both volumes on one graph), and proportionally (e-trading volume / OTC volume). The report quality of the graphics is rather low in detail, please find the full versions of the graphs attached. 
+
+```{r main, include=FALSE}
+agg <- df %>% group_by(report_date, ATS) %>% summarise(
+  vol = sum(trade_cost)
+) %>% as.data.frame()
+agg$ATS <- as.factor(agg$ATS)
+
+agg2 <- agg
+dailyVolume <- ggplot(data = agg2, aes(x = report_date, y = vol, color = ATS)) + geom_point() + xlab("Time") + ylab("Volume (thousands USD)") + ggtitle("Daily aggregation: Volume over time")
+
+#5297 total unique days, only 2775 dates have ATS == 1 reporting
+agg <- pivot_wider(agg, names_from = ATS, values_from = vol)
+agg$`1` <- ifelse(is.na(agg$`1`), 0, agg$`1`)
+agg$prop <- agg$`1` / agg$`0`
+
+dailyProp <- ggplot(data = agg, aes(x = report_date,y =prop)) + geom_point() + geom_smooth(colour="red") + xlab("Time") + ylab("Proportion of e-traded volume") + ggtitle("Daily aggregation: Proportion over time")
+dailyZero <- ggplot(data = agg, aes(x = report_date, y = `0`)) + geom_point() + geom_smooth(colour="red") + xlab("Time") + ylab("Volume of OTC Brokers") + ggtitle("Daily aggregation: Volume over time")
+dailyOne <- ggplot(data = agg, aes(x = report_date, y = `1`)) + geom_point() + geom_smooth(colour="red") + xlab("Time") + ylab("Volume of E-Trades") + ggtitle("Daily aggregation: Volume over time")
+#Dropoff in trades at end of 2020 likely due to inflation concerns regarding Fed raising rates (i.e corporate bonds will be worth less)
+
+#-------------------------[Upscale onto a weekly basis]-------------------------
+agg <- agg2
+agg$month <- month(agg$report_date)
+agg$year <- year(agg$report_date)
+agg$week <- week(agg$report_date)
+
+agg <- agg %>% group_by(year, month, week, ATS) %>% summarise(
+  vol = sum(vol)
+) %>% as.data.frame()
+agg$report_date <- as.Date(paste(agg$year, agg$month, "01", sep = "-"))
+
+agg2 <- agg
+weeklyVolume <- ggplot(data = agg2, aes(x = report_date, y = vol, color = ATS)) + geom_point() + xlab("Time") + ylab("Volume (thousands USD)") + ggtitle("Weekly aggregation: Volume over time")
+
+agg <- pivot_wider(agg, names_from = ATS, values_from = vol)
+agg$`1` <- ifelse(is.na(agg$`1`), 0, agg$`1`)
+agg$prop <- agg$`1` / agg$`0`
+
+weeklyProp <- ggplot(data = agg, aes(x = report_date,y = prop)) + geom_point() + geom_smooth(colour="red") + xlab("Time") + ylab("Proportion of e-traded volume") + ggtitle("Weekly aggregation: Proportion over time")
+weeklyZero <- ggplot(data = agg, aes(x = report_date, y = `0`)) + geom_point() + geom_smooth(colour="red") + xlab("Time") + ylab("Volume of OTC Brokers") + ggtitle("Weekly aggregation: Volume over time")
+weeklyOne <- ggplot(data = agg, aes(x = report_date, y = `1`)) + geom_point() + geom_smooth(colour="red") + xlab("Time") + ylab("Volume of E-Trades") + ggtitle("Weekly aggregation: Volume over time")
+
+#-------------------------[Upscale onto a monthly basis]-------------------------
+agg <- agg2
+
+agg <- agg %>% group_by(year, month, ATS) %>% summarise(
+  vol = sum(vol)
+) %>% as.data.frame()
+agg$report_date <- as.Date(paste(agg$year, agg$month, "01", sep = "-"))
+
+agg2 <- agg
+monthlyVolume <- ggplot(data = agg2, aes(x = report_date, y = vol, color = ATS)) + geom_point() + xlab("Time") + ylab("Volume (thousands USD)") + ggtitle("Monthly aggregation: Volume over time")
+
+agg <- pivot_wider(agg, names_from = ATS, values_from = vol)
+agg$`1` <- ifelse(is.na(agg$`1`), 0, agg$`1`)
+agg$prop <- agg$`1` / agg$`0`
+
+monthlyProp <- ggplot(data = agg, aes(x = report_date,y = prop)) + geom_point() + geom_smooth(colour="red") + xlab("Time") + ylab("Proportion of e-traded volume") + ggtitle("Monthly aggregation: Proportion over time")
+monthlyZero <- ggplot(data = agg, aes(x = report_date, y = `0`)) + geom_point() + geom_smooth(colour="red") + xlab("Time") + ylab("Volume of OTC Brokers") + ggtitle("Monthly aggregation: Volume over time")
+monthlyOne <- ggplot(data = agg, aes(x = report_date, y = `1`)) + geom_point() + geom_smooth(colour="red") + xlab("Time") + ylab("Volume of E-Trades") + ggtitle("Monthly aggregation: Volume over time")
+
+#-------------------------[Upscale onto a yearly basis]-------------------------
+agg <- agg2
+
+agg <- agg %>% group_by(year, ATS) %>% summarise(
+  vol = sum(vol)
+) %>% as.data.frame()
+agg$report_date <- as.Date(paste(agg$year, "01", "01", sep = "-"))
+
+agg2 <- agg
+yearlyVolume <- ggplot(data = agg2, aes(x = report_date, y = vol, color = ATS)) + geom_point() + xlab("Time") + ylab("Volume (thousands USD)") + ggtitle("Yearly aggregation: Volume over time")
+
+agg <- pivot_wider(agg, names_from = ATS, values_from = vol)
+agg$`1` <- ifelse(is.na(agg$`1`), 0, agg$`1`)
+agg$prop <- agg$`1` / agg$`0`
+
+yearlyProp <- ggplot(data = agg, aes(x = report_date,y = prop)) + geom_point() + geom_smooth(colour="red") + xlab("Time") + ylab("Proportion of e-traded volume") + ggtitle("Yearly aggregation: Proportion over time")
+yearlyZero <- ggplot(data = agg, aes(x = report_date, y = `0`)) + geom_point() + geom_smooth(colour="red") + xlab("Time") + ylab("Volume of OTC Brokers") + ggtitle("Yearly aggregation: Volume over time")
+yearlyOne <- ggplot(data = agg, aes(x = report_date, y = `1`)) + geom_point() + geom_smooth(colour="red") + xlab("Time") + ylab("Volume of E-Trades") + ggtitle("Yearly aggregation: Volume over time")
+```
+
+```{r grid1, echo=FALSE}
+# dailyVolume
+# weeklyVolume
+# monthlyVolume
+# yearlyVolume
+grid.arrange(dailyVolume, weeklyVolume, monthlyVolume, yearlyVolume, ncol = 2)
+```
+
+```{r grid2, echo=FALSE}
+# dailyProp
+# weeklyProp
+# monthlyProp
+# yearlyProp
+grid.arrange(dailyProp, weeklyProp, monthlyProp, yearlyProp, ncol = 2)
+```
+
+```{r grid3, echo=FALSE}
+# dailyZero
+# weeklyZero
+# monthlyZero
+# yearlyZero
+grid.arrange(dailyZero, weeklyZero, monthlyZero, yearlyZero, ncol = 2)
+```
+
+```{r grid4, echo=FALSE}
+# dailyOne
+# weeklyOne
+# monthlyOne
+# yearlyOne
+grid.arrange(dailyOne, weeklyOne, monthlyOne, yearlyOne, ncol = 2)
+```
+
+From these graphs, we can notably have a few takeaways: 
+
+
+1. The proportion of e-trades as total volume has definitely increased over time. The trend is strong at 3 levels of aggregation. Note in the monthly aggregation we see a jump e-traded volume around 2008 - 2010. Potentially this could be due to a loss in confidence of traditional OTC brokers during the financial crisis?  
+
+
+2. In the double plot, we see that traditional OTC brokerage deals still heavily outweigh e-trades despite this increase in proportion. However, this graphic may be a little misleading because it portrays the e-trades as having close to no volume where in reality it is only around one magnitude (10^-1) less than OTC volumes. However, it is apparent that there has been a decline in volume for OTC trades since around 2007. Given that e-trading volume has not increasing proportionally, this decline is likely attributable to more macro factors. 
+
+
+3. Graphs for OTC and e-trading volumes separately support that e-trading is gaining more prominence. However, one notable observation is the upwards trend in OTC volume in the late 2010s. 
+
+
+Ultimately, the graph of e-trading volume by itself stands as the best empirical measure of the increased prominence of e-trading. However, it does not seem like this increase in prominence has come at the expense of traditional OTC brokers, as the decrease in OTC volume is not matched. Changes is volume also suffer from confounding macroeconomic variables which are not captured by these visualizations. Further analysis on a company-level may yield more insight as to whether companies are switching over to e-trading, or if it remains a trend for certain companies and not others. 
+
+
+One major caveat to this analysis I would add is that many trade_price values may be in dollars instead of thousands of dollars. Depending on the severity of this issue, the data and visualizations may drastically change. 
