@@ -49,3 +49,4 @@ po/*~
 rsconnect/
 brokers.csv
 insurers_transactions.rds
+*.csv

@@ -67,20 +67,24 @@ gc()
 #     })
 #   ) %>% ungroup()
 
+#Note that ACT8Q is not aligned with the definition in the notes, but based on a conversation about concern over the asymmetry in entry/exit
 df <- df %>%
   group_by(brok_id) %>%
   arrange(Time) %>%
   mutate(
     act4q = lag(quartVol, 4) + lag(quartVol, 3) + lag(quartVol, 2) + lag(quartVol, 1), 
-    act2q = lag(quartVol, 2) + lag(quartVol, 1)
+    act2q = lag(quartVol, 2) + lag(quartVol, 1), 
+    act8q = lag(quartVol, 4) + lag(quartVol, 3) + lag(quartVol, 2) + lag(quartVol, 1) + 
+      lag(quartVol, 8) + lag(quartVol, 7) + lag(quartVol, 6) + lag(quartVol, 5)
   )
 
 df$act4q <- ifelse(df$Time < as.POSIXct("2005-12-31"), 0, df$act4q)
+df$act8q <- ifelse(df$Time < as.POSIXct("2006-12-31"), 0, df$act8q)
 df$act2q <- ifelse(df$Time < as.POSIXct("2005-06-06"), 0, df$act2q)
 
 #aggregate to count entrants and exits
 df$entry <- ifelse(df$quartVol != 0 & df$act4q == 0, 1, 0)
-df$exit <- ifelse(df$act4q > 0 & df$act2q == 0, 1, 0)
+df$exit <- ifelse(df$act8q > 0 & df$act4q == 0, 1, 0)
 
 df <- df %>% mutate(
   exit = ifelse(lag(exit) == 1 & exit == 1, 0, exit)

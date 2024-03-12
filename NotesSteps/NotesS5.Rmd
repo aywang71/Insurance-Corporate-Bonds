@@ -38,20 +38,10 @@ df$Time <- as.POSIXct(df$Time)
 ## Summary
 The first generated graphic shows entry and exit for various insurance funds, and the second graphic shows entry and exit for various brokers. A few notes are as follows: 
 
-- First, take note of the y-axis scaling. There is much more entry/exit movement for funds than there is for brokers, by a magnitude of around 7x
-
-- Continuing, we note that both plots indicate a downwards trend in both entry and exit movement. However, there are generally more exit individuals than entry individuals. I would note that this does not necessarily mean that the number of market participants is decreasing over time, as a fund can be considered an 'exit' fund without coming back as an entrant fund. For instance, consider the case in which a fund only makes trades in Q1 of each year. Then in Q4, it will always be recognized as an exit, but it will never be recognized as an entrant because of the volume traded in Q1. 
-
-- Note the cyclical patterns in the brok_id exit patterns: there is typically a spike in exits around Q4/Q1. Recall that and exit means no trading volume for the previous two quarters. This would indicate lower trading volumes for many brokers in Q3/Q4 - unknown whether this is due to cyclical macro factors (i.e lower profitability) or over demand for bonds. 
-
-- One more interesting factor is that the fund_id graphic shows entry and exit activity beginning to diverge around 2020, while the brok_id graphic maintains a downward cyclical trend over time. I think there is an interesting macroeconomic discussion to be had here, but I am suprised by the number of exits in the fund_id graph after 2020, as I would have expected more firms to shift funds into fixed income with a higher rate environment. 
+Note that we have adjusted the methodology slightly, and calculate exit has having traded in the last 8 quarters, but not in the last four. Also note that this means our exit data cannot be defined until two years from start (we need 8 quarters of data to accurately define an exit)
 
 
-
-I would say the primary limitation in this analysis and visualization is the disproportionate measurement of entry and exit activity. That is, a market participant could exit multiple times without there being a single entry recorded. 
-
-
-```{r cars, echo=FALSE}
+```{r cars}
 #Add all pairwise combinations of rows 
 dates <- unique(df$Time)
 fund_ids <- unique(df$fund_id)
@@ -67,15 +57,22 @@ df <- df %>%
   arrange(Time) %>%
   mutate(
     act4q = lag(quartVol, 4) + lag(quartVol, 3) + lag(quartVol, 2) + lag(quartVol, 1), 
-    act2q = lag(quartVol, 2) + lag(quartVol, 1)
+    act2q = lag(quartVol, 2) + lag(quartVol, 1), 
+    act8q = lag(quartVol, 4) + lag(quartVol, 3) + lag(quartVol, 2) + lag(quartVol, 1) + 
+      lag(quartVol, 8) + lag(quartVol, 7) + lag(quartVol, 6) + lag(quartVol, 5)
   )
 
 df$act4q <- ifelse(df$Time < as.POSIXct("2005-12-31"), 0, df$act4q)
+df$act8q <- ifelse(df$Time < as.POSIXct("2006-12-31"), 0, df$act8q)
 df$act2q <- ifelse(df$Time < as.POSIXct("2005-06-06"), 0, df$act2q)
-df$entry <- ifelse(df$quartVol != 0 & df$act4q == 0, 1, 0)
-df$exit <- ifelse(df$act4q > 0 & df$act2q == 0, 1, 0)
 
-df <- df %>% mutate(
+#aggregate to count entrants and exits
+df$entry <- ifelse(df$quartVol != 0 & df$act4q == 0, 1, 0)
+df$exit <- ifelse(df$act8q > 0 & df$act4q == 0, 1, 0)
+
+df <- df %>%
+  group_by(fund_id) %>%
+  arrange(Time) %>% mutate(
   exit = ifelse(lag(exit) == 1 & exit == 1, 0, exit)
 )
 
@@ -93,7 +90,7 @@ fundPlot
 ```
 
 
-```{r pressure, echo=FALSE}
+```{r pressure}
 setwd("C:/Users/hyper/OneDrive/Documents/GitHub/Insurance-Corporate-Bonds")
 df <- readRDS('insurers_transactions.rds')
 brokers <- read.csv('brokers.csv')
@@ -132,17 +129,22 @@ df <- df %>%
   arrange(Time) %>%
   mutate(
     act4q = lag(quartVol, 4) + lag(quartVol, 3) + lag(quartVol, 2) + lag(quartVol, 1), 
-    act2q = lag(quartVol, 2) + lag(quartVol, 1)
+    act2q = lag(quartVol, 2) + lag(quartVol, 1), 
+    act8q = lag(quartVol, 4) + lag(quartVol, 3) + lag(quartVol, 2) + lag(quartVol, 1) + 
+      lag(quartVol, 8) + lag(quartVol, 7) + lag(quartVol, 6) + lag(quartVol, 5)
   )
 
 df$act4q <- ifelse(df$Time < as.POSIXct("2005-12-31"), 0, df$act4q)
+df$act8q <- ifelse(df$Time < as.POSIXct("2006-12-31"), 0, df$act8q)
 df$act2q <- ifelse(df$Time < as.POSIXct("2005-06-06"), 0, df$act2q)
 
 #aggregate to count entrants and exits
 df$entry <- ifelse(df$quartVol != 0 & df$act4q == 0, 1, 0)
-df$exit <- ifelse(df$act4q > 0 & df$act2q == 0, 1, 0)
+df$exit <- ifelse(df$act8q > 0 & df$act4q == 0, 1, 0)
 
-df <- df %>% mutate(
+df <- df %>%
+  group_by(brok_id) %>%
+  arrange(Time) %>% mutate(
   exit = ifelse(lag(exit) == 1 & exit == 1, 0, exit)
 )
 
