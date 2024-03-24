@@ -15,6 +15,7 @@ library(dplyr)
 library(lubridate)
 library(ggplot2)
 library(zoo)
+library(stargazer)
 
 setwd("C:/Users/hyper/OneDrive/Documents/GitHub/Insurance-Corporate-Bonds")
 
@@ -119,26 +120,57 @@ df2 <- merge(df, sub, by = c('fund_id', 'Time'))
 #With data set up, now want to run regressions
 library(lfe)
 
+df2$indep <- df2$indep1
+fm1 <- felm(epats ~ indep| Time + cusip | 0 | 0, data = df2)
+df2$indep <- df2$indep2
+fm2 <- felm(epats ~ indep| Time + cusip | 0 | 0, data = df2)
+df2$indep <- df2$indep3
+fm3 <- felm(epats ~ indep| Time + cusip | 0 | 0, data = df2)
+df2$indep <- df2$indep4
+fm4 <- felm(epats ~ indep| Time + cusip | 0 | 0, data = df2)
+df2$indep <- df2$indep5
+fm5 <- felm(epats ~ indep| Time + cusip | 0 | 0, data = df2)
+df2$indep <- df2$indep6
+fm6 <- felm(epats ~ indep| Time + cusip | 0 | 0, data = df2)
+df2$indep <- df2$indep7
+fm7 <- felm(epats ~ indep| Time + cusip | 0 | 0, data = df2)
+df2$indep <- df2$indep8
+fm8 <- felm(epats ~ indep| Time + cusip | 0 | 0, data = df2)
+
+
 models <- list (
-  felm(epats ~ indep1| Time + cusip | 0 | 0, data = df2),
-  felm(epats ~ indep2| Time + cusip | 0 | 0, data = df2),
-  felm(epats ~ indep3| Time + cusip | 0 | 0, data = df2),
-  felm(epats ~ indep4| Time + cusip | 0 | 0, data = df2),
-  felm(epats ~ indep5| Time + cusip | 0 | 0, data = df2),
-  felm(epats ~ indep6| Time + cusip | 0 | 0, data = df2),
-  felm(epats ~ indep7| Time + cusip | 0 | 0, data = df2),
-  felm(epats ~ indep8| Time + cusip | 0 | 0, data = df2)
+  fm1, 
+  fm2, 
+  fm3, 
+  fm4,
+  fm5, 
+  fm6, 
+  fm7, 
+  fm8
 )
 
 results <- map(models, ~{
   model_summary <- summary(.x)
   data.frame(
     coef = model_summary$coefficients[, 1],
+    s_error = model_summary$coefficients[, 2],
     t_stat = model_summary$coefficients[, 3],
     p_value = model_summary$coefficients[, 4],
     stringsAsFactors = FALSE
   )
-}) %>% bind_rows(.id = "FixedEffectModel")
+}) %>%
+  bind_rows(.id = "FixedEffectModel")
 
 knitr::kable(results)
+
+
+m1 <- list(fm1, fm2, fm3)
+m2 <- list(fm4, fm5, fm6)
+m3 <- list(fm7, fm8)
+```
+
+```{r cars2, results = "asis"}
+stargazer(m1, title = "Results of regression with dummies, orig def. p1", type = 'text')
+stargazer(m2, title = "Results of regression with dummies, orig def. p2", type = 'text')
+stargazer(m3, title = "Results of regression with dummies, orig def. p3", type = 'text')
 ```

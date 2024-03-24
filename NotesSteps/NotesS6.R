@@ -6,6 +6,7 @@ library(dplyr)
 library(lubridate)
 library(ggplot2)
 library(zoo)
+library(stargazer)
 
 setwd("C:/Users/hyper/OneDrive/Documents/GitHub/Insurance-Corporate-Bonds")
 
@@ -96,10 +97,30 @@ sub <- read.csv("indepVarCalc.csv")
 
 #Then need to rejoin data onto df for a by-transaction basis with quarterly data
 df$Time <- as.POSIXct(df$Time)
-df2 <- merge(df, sub, by = c('fund_id', 'Time'))
+df2 <- merge(df, sub, by = c('fund_id', 'Time'), all.x = all)
 
 #With data set up, now want to run regressions
 library(lfe)
 FER <- felm(epats ~ indep1| Time + cusip | 0 | 0, data = df2)
 
-felm(epats ~ indep1| Time + cusip | 0 | 0, data = df2)
+models <- list (
+  felm(epats ~ indep1| Time + cusip | 0 | 0, data = df2),
+  felm(epats ~ indep2| Time + cusip | 0 | 0, data = df2),
+  felm(epats ~ indep3| Time + cusip | 0 | 0, data = df2),
+  felm(epats ~ indep4| Time + cusip | 0 | 0, data = df2),
+  felm(epats ~ indep5| Time + cusip | 0 | 0, data = df2),
+  felm(epats ~ indep6| Time + cusip | 0 | 0, data = df2),
+  felm(epats ~ indep7| Time + cusip | 0 | 0, data = df2),
+  felm(epats ~ indep8| Time + cusip | 0 | 0, data = df2)
+)
+
+# results <- map(models, ~{
+#   model_summary <- summary(.x)
+#   data.frame(
+#     coef = model_summary$coefficients[, 1],
+#     s_error = model_summary$coefficients[, 2],
+#     t_stat = model_summary$coefficients[, 3],
+#     p_value = model_summary$coefficients[, 4],
+#     stringsAsFactors = FALSE
+#   )
+# }) %>% bind_rows(.id = "FixedEffectModel")
