@@ -119,23 +119,24 @@ df2 <- merge(df, sub, by = c('fund_id', 'Time'))
 
 #With data set up, now want to run regressions
 library(lfe)
-
+df2$Time <- as.factor(df2$Time)
+df2$cusip <- as.factor(df2$cusip)
 df2$indep <- df2$indep1
-fm1 <- felm(epats ~ indep| Time + cusip | 0 | 0, data = df2)
+fm1 <- felm(epats ~ indep| Time * cusip | 0 | 0, data = df2)
 df2$indep <- df2$indep2
-fm2 <- felm(epats ~ indep| Time + cusip | 0 | 0, data = df2)
+fm2 <- felm(epats ~ indep| Time * cusip | 0 | 0, data = df2)
 df2$indep <- df2$indep3
-fm3 <- felm(epats ~ indep| Time + cusip | 0 | 0, data = df2)
+fm3 <- felm(epats ~ indep| Time * cusip | 0 | 0, data = df2)
 df2$indep <- df2$indep4
-fm4 <- felm(epats ~ indep| Time + cusip | 0 | 0, data = df2)
+fm4 <- felm(epats ~ indep| Time * cusip | 0 | 0, data = df2)
 df2$indep <- df2$indep5
-fm5 <- felm(epats ~ indep| Time + cusip | 0 | 0, data = df2)
+fm5 <- felm(epats ~ indep| Time * cusip | 0 | 0, data = df2)
 df2$indep <- df2$indep6
-fm6 <- felm(epats ~ indep| Time + cusip | 0 | 0, data = df2)
+fm6 <- felm(epats ~ indep| Time * cusip | 0 | 0, data = df2)
 df2$indep <- df2$indep7
-fm7 <- felm(epats ~ indep| Time + cusip | 0 | 0, data = df2)
+fm7 <- felm(epats ~ indep| Time * cusip | 0 | 0, data = df2)
 df2$indep <- df2$indep8
-fm8 <- felm(epats ~ indep| Time + cusip | 0 | 0, data = df2)
+fm8 <- felm(epats ~ indep| Time * cusip | 0 | 0, data = df2)
 
 
 models <- list (
@@ -170,7 +171,7 @@ m3 <- list(fm7, fm8)
 ```
 
 ```{r cars2, results = "asis"}
-stargazer(m1, title = "Results of regression with dummies, orig def. p1", type = 'text')
-stargazer(m2, title = "Results of regression with dummies, orig def. p2", type = 'text')
-stargazer(m3, title = "Results of regression with dummies, orig def. p3", type = 'text')
+stargazer(m1, title = "Results of regression with dummies, orig def. p1", type = 'latex', digits = NA, add.lines=list(c("Time FE", "X", "X", "X"), c("cusip FE", "X", "X", "X")))
+stargazer(m2, title = "Results of regression with dummies, orig def. p2", type = 'latex', digits = NA, add.lines=list(c("Time FE", "X", "X", "X"), c("cusip FE", "X", "X", "X")))
+stargazer(m3, title = "Results of regression with dummies, orig def. p3", type = 'latex', digits = NA, add.lines=list(c("Time FE", "X", "X"), c("cusip FE", "X", "X")))
 ```

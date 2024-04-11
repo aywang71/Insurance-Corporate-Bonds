@@ -97,11 +97,13 @@ sub <- read.csv("indepVarCalc.csv")
 
 #Then need to rejoin data onto df for a by-transaction basis with quarterly data
 df$Time <- as.POSIXct(df$Time)
-df2 <- merge(df, sub, by = c('fund_id', 'Time'), all.x = all)
+df2 <- merge(df, sub, by = c('fund_id', 'Time'))
 
 #With data set up, now want to run regressions
 library(lfe)
-FER <- felm(epats ~ indep1| Time + cusip | 0 | 0, data = df2)
+df2$Time <- as.factor(df2$Time)
+df2$cusip <- as.factor(df2$cusip)
+FER <- felm(epats ~ indep1| Time * cusip | 0 | 0, data = df2)
 
 models <- list (
   felm(epats ~ indep1| Time + cusip | 0 | 0, data = df2),
@@ -124,3 +126,13 @@ models <- list (
 #     stringsAsFactors = FALSE
 #   )
 # }) %>% bind_rows(.id = "FixedEffectModel")
+
+
+stargazer(FER, type = 'text', digits = NA,
+          add.lines=list(
+            c('Firm \\times Time FE','A','X','X','X','X','X'),
+            c('Controls','','','X','X','X','X'),
+            c('Call/Put FE','A','','','X','','X'), 
+            c('Seniority FE','','','','','X','X')
+          ))
+
