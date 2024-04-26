@@ -103,7 +103,10 @@ df2 <- merge(df, sub, by = c('fund_id', 'Time'))
 library(lfe)
 df2$Time <- as.factor(df2$Time)
 df2$cusip <- as.factor(df2$cusip)
-FER <- felm(epats ~ indep1| Time * cusip | 0 | 0, data = df2)
+#FER <- felm(epats ~ indep1| Time * cusip | 0 | 0, data = df2)
+library(fixest)
+df2$Time_cusip <- interaction(df2$Time, df2$cusip)
+logit_fe_model2 <- feglm(epats ~ indep1 | Time + cusip, family = binomial(link = "logit"), data = df2)
 
 models <- list (
   felm(epats ~ indep1| Time + cusip | 0 | 0, data = df2),
